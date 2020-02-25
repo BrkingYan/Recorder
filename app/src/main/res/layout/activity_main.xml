@@ -109,15 +109,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="fs:"
-                android:textSize="20dp"
+                android:textSize="15dp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layout_gravity="center"/>
             <org.angmarch.views.NiceSpinner
                 android:id="@+id/fs_spinner"
-                android:layout_width="120dp"
+                android:layout_width="130dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
                 android:textSize="15dp" />
         </LinearLayout>
 
@@ -125,12 +124,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:layout_marginLeft="10dp"
             android:layout_marginRight="15dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="声道数:"
-                android:textSize="20dp"
+                android:textSize="15dp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layout_gravity="center"/>
@@ -138,7 +138,6 @@
                 android:id="@+id/channel_spinner"
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
                 android:textSize="15dp" />
         </LinearLayout>
 
@@ -156,7 +155,7 @@
             android:id="@+id/file_input"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:ems="10"
+
             android:hint="请输入文件名"
             android:layout_weight="3"/>
         <Button
@@ -166,10 +165,14 @@
             android:text="保存参数"
             android:layout_weight="2"/>
     </LinearLayout>
-
+    <TextView
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="如果参数有变化请先保存参数"/>
     <Button
         android:id="@+id/start_btn"
-        android:layout_marginTop="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="start"/>

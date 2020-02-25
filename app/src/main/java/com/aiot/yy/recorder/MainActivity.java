@@ -2,6 +2,8 @@ package com.aiot.yy.recorder;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -52,7 +54,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button startBtn;
     private Button saveBtn;
 
-    List<String> fsSet = new LinkedList<>(Arrays.asList("11025", "22050", "24000", "44100", "48000"));
+    List<String> fsSet = new LinkedList<>(Arrays.asList("8000","11025","16000", "22050", "24000",
+           "37800", "44100", "48000","96000","192000"));
     List<String> channelSet = new LinkedList<>(Arrays.asList("1", "2"));
     private int selectedFsIdx = 0;
     private int selectedChannelIdx = 0;
@@ -81,6 +84,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initView();
         initData();
 
+    }
+
+    private void testFs(){
+        List<Integer> list = new ArrayList<>();
+        list.add(8000);
+        list.add(11025);
+        list.add(22050);
+        list.add(16000);
+        list.add(37800);
+        list.add(44100);
+        list.add(48000);
+        list.add(96000);
+        list.add(192000);
+        for (int e : list){
+            int bufferSize = AudioRecord.getMinBufferSize(e,
+                    AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+            if (bufferSize > 0){
+                //list.add(i);
+                Log.d("test",e + "");
+            }
+        }
     }
 
     private void initView(){

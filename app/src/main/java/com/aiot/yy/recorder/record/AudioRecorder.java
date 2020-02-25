@@ -97,6 +97,7 @@ public class AudioRecorder implements IAudioRecorder{
                     recorderState = RECORDER_STATE_IDLE;
                     recorderStateMonitor.notifyAll();
                 }
+
             }
 
             @SuppressWarnings("ResultOfMethodCallIgnored")
