@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -13,12 +14,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.aiot.yy.recorder.play.AudioPlayer;
 import com.aiot.yy.recorder.record.AudioRecorder;
 import com.aiot.yy.recorder.util.SPUtil;
+import com.aiot.yy.recorder.util.Test;
+import com.kyleduo.switchbutton.SwitchButton;
 
 import org.angmarch.views.NiceSpinner;
 import org.angmarch.views.OnSpinnerItemSelectedListener;
@@ -36,6 +40,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String FS_KEY = "fs";
     private static final String T_KEY = "t";
     private static final String CHANNEL_KEY = "channel";
+    private static final String PLAY_FLAG_KEY = "play";
+    private static final String AUDIO_SOURCE_KEY = "audio";
 
     private static final String FMIN_FILE = "fmin";
     private static final String FMAX_FILE = "fmax";
@@ -43,22 +49,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String FS_FILE = "fs";
     private static final String T_FILE = "t";
     private static final String CHANNEL_FILE = "channel";
+    private static final String PLAY_FLAG_FILE = "play";
+    private static final String AUDIO_SOURCE_FILE = "audio";
 
     private EditText fminInput;
     private EditText fmaxInput;
     private EditText BInput;
     private NiceSpinner fsSpinner;
     private NiceSpinner channelSpinner;
+    private NiceSpinner audioSourceSpinner;
     private EditText TInput;
     private EditText fileNameInput;
     private Button startBtn;
     private Button saveBtn;
+    private SwitchButton switchButton;
 
-    List<String> fsSet = new LinkedList<>(Arrays.asList("8000","11025","16000", "22050", "24000",
+    private static final List<String> fsSet = new LinkedList<>(Arrays.asList("8000","11025","16000", "22050", "24000",
            "37800", "44100", "48000","96000","192000"));
-    List<String> channelSet = new LinkedList<>(Arrays.asList("1", "2"));
+    private static final List<String> channelSet = new LinkedList<>(Arrays.asList("1", "2"));
+    private static final List<String> audioSourceSet = new LinkedList<>(Arrays.asList("MIC","DEFAULT",
+            "VOICE_CALL",
+            "VOICE_COMMUNICATION","VOICE_DOWNLINK","VOICE_UPLINK",
+            "VOICE_PERFORMANCE","VOICE_RECOGNITION","CAMCORDER",
+            "UNPROCESSED","REMOTE_SUBMIX"));
     private int selectedFsIdx = 0;
     private int selectedChannelIdx = 0;
+    private int selectedAudioSourceIdx = 0;
 
     String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
@@ -74,6 +90,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private float T;
     private int B;
     private int channels;
+    private String playFlag;
+    private int audioFormatSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,26 +104,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    private void testFs(){
-        List<Integer> list = new ArrayList<>();
-        list.add(8000);
-        list.add(11025);
-        list.add(22050);
-        list.add(16000);
-        list.add(37800);
-        list.add(44100);
-        list.add(48000);
-        list.add(96000);
-        list.add(192000);
-        for (int e : list){
-            int bufferSize = AudioRecord.getMinBufferSize(e,
-                    AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT);
-            if (bufferSize > 0){
-                //list.add(i);
-                Log.d("test",e + "");
-            }
-        }
-    }
+
 
     private void initView(){
         fminInput = findViewById(R.id.fmin_input);
@@ -115,8 +114,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         fileNameInput = findViewById(R.id.file_input);
         fsSpinner = findViewById(R.id.fs_spinner);
         channelSpinner = findViewById(R.id.channel_spinner);
+        audioSourceSpinner = findViewById(R.id.source_spinner);
         startBtn = findViewById(R.id.start_btn);
         saveBtn = findViewById(R.id.save_btn);
+        switchButton = findViewById(R.id.switch_btn);
+
+        switchButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                switchButton.setChecked(isChecked);
+                if (isChecked){
+                    playFlag = "1";
+                }else {
+                    playFlag = "0";
+                }
+            }
+        });
 
         startBtn.setOnClickListener(this);
         saveBtn.setOnClickListener(this);
@@ -124,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         fsSpinner.attachDataSource(fsSet);
         channelSpinner.attachDataSource(channelSet);
+        audioSourceSpinner.attachDataSource(audioSourceSet);
 
         fsSpinner.setOnSpinnerItemSelectedListener((parent, view, position, id) -> {
             // This example uses String, but your type can be any
@@ -139,7 +153,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //fsSpinner.setText(item);
             channelSpinner.setSelectedIndex(position);
             selectedChannelIdx = position;
-
+        });
+        audioSourceSpinner.setOnSpinnerItemSelectedListener((parent, view, position, id) -> {
+            // This example uses String, but your type can be any
+            String item = (String) parent.getItemAtPosition(position);
+            //fsSpinner.setText(item);
+            audioSourceSpinner.setSelectedIndex(position);
+            selectedAudioSourceIdx = position;
         });
     }
 
@@ -148,26 +168,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.start_btn:{
                 if (startBtn.getText().toString().equals("start")){
-                    disableViews();
+                    Log.d("test","param:" + "fmin:" + this.fmin + " fmax:" + this.fmax +
+                            " T:" + this.T + " B:" + this.B + " channel:"+this.channels + " fs:"
+                            + this.fs + " souce:" + audioSourceSet.get(selectedAudioSourceIdx));
+                    String fileName = "test";
+                    if (!fileNameInput.getText().toString().equals("")){
+                        fileName = fileNameInput.getText().toString();
+                    }
+                    //开始录音
+                    audioRecorder = new AudioRecorder(fs,fileName,channels,audioFormatSource);
+                    //测试音源
+                    if (!audioRecorder.checkAudioSource()){
+                        Toast.makeText(MainActivity.this,
+                                "无法录音，请切换音源或修改参数后重试",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    //变换按钮颜色
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             startBtn.setText("stop");
                         }
                     }, 300);
-                    String fileName = "test";
-                    if (!fileNameInput.getText().toString().equals("")){
-                        fileName = fileNameInput.getText().toString();
-                    }
-                    //开始录音
-                    audioRecorder = new AudioRecorder(fs,fileName,channels);
+                    disableViews();
                     if (!audioRecorder.isRecording()) {
                         audioRecorder.startRecord();
                     }
                     //开始播放
                     //初始化音频处理对象
-                    audioPlayer = new AudioPlayer(fs,this.T, this.fmin, this.fmax,channels);
-                    audioPlayer.startPlay();
+                    if (switchButton.isChecked()){
+                        audioPlayer = new AudioPlayer(fs,this.T, this.fmin, this.fmax,channels);
+                        audioPlayer.startPlay();
+                    }
                 }else {
                     enableViews();
                     new Handler().postDelayed(new Runnable() {
@@ -180,8 +213,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     audioRecorder.finishRecord();
                     audioRecorder = null;
                     //停止播放
-                    audioPlayer.finishPlay();
-                    audioPlayer = null;
+                    if (switchButton.isChecked()){
+                        audioPlayer.finishPlay();
+                        audioPlayer = null;
+                    }
                 }
                 break;
             }
@@ -205,6 +240,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TInput.setEnabled(false);
         fsSpinner.setEnabled(false);
         fileNameInput.setEnabled(false);
+        switchButton.setEnabled(false);
+        audioSourceSpinner.setEnabled(false);
+        channelSpinner.setEnabled(false);
     }
 
     private void enableViews(){
@@ -214,6 +252,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TInput.setEnabled(true);
         fsSpinner.setEnabled(true);
         fileNameInput.setEnabled(true);
+        switchButton.setEnabled(true);
+        audioSourceSpinner.setEnabled(true);
+        channelSpinner.setEnabled(true);
     }
 
     private void initData(){
@@ -245,8 +286,68 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         selectedChannelIdx = Integer.parseInt(channelIdx);
         channels = Integer.parseInt(channelSet.get(Integer.parseInt(channelIdx)));
 
+        playFlag = SPUtil.getString(this,PLAY_FLAG_FILE,PLAY_FLAG_KEY,"0");
+        switchButton.setChecked(playFlag.equals("1"));
+
+        String audioSourceIdx = SPUtil.getString(this,AUDIO_SOURCE_FILE,AUDIO_SOURCE_KEY,
+                "0");
+        selectedAudioSourceIdx = Integer.parseInt(audioSourceIdx);
+        audioFormatSource = getAudioFormatSource(selectedAudioSourceIdx);
+        audioSourceSpinner.setSelectedIndex(selectedAudioSourceIdx);
+
         Log.d("test","param:" + "fmin:" + this.fmin + " fmax:" + this.fmax +
             " T:" + this.T + " B:" + this.B + " channel:"+this.channels + " fs:" + this.fs);
+    }
+
+    private int getAudioFormatSource(int idx){
+        int ret = -1;
+        switch (idx){
+            case 0:{
+                ret = MediaRecorder.AudioSource.MIC;
+                break;
+            }
+            case 1:{
+                ret = MediaRecorder.AudioSource.DEFAULT;
+                break;
+            }
+            case 2:{
+                ret = MediaRecorder.AudioSource.VOICE_CALL;
+                break;
+            }
+            case 3:{
+                ret = MediaRecorder.AudioSource.VOICE_COMMUNICATION;
+                break;
+            }
+            case 4:{
+                ret = MediaRecorder.AudioSource.VOICE_DOWNLINK;
+                break;
+            }
+            case 5:{
+                ret = MediaRecorder.AudioSource.VOICE_UPLINK;
+                break;
+            }
+            case 6:{
+                ret = MediaRecorder.AudioSource.VOICE_PERFORMANCE;
+                break;
+            }
+            case 7:{
+                ret = MediaRecorder.AudioSource.VOICE_RECOGNITION;
+                break;
+            }
+            case 8:{
+                ret = MediaRecorder.AudioSource.CAMCORDER;
+                break;
+            }
+            case 9:{
+                ret = MediaRecorder.AudioSource.UNPROCESSED;
+                break;
+            }
+            case 10:{
+                ret = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+                break;
+            }
+        }
+        return ret;
     }
 
     private void saveData(){
@@ -272,6 +373,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         SPUtil.putString(this,CHANNEL_FILE,CHANNEL_KEY,selectedChannelIdx+"");
         channels = Integer.parseInt(channelSet.get(selectedChannelIdx));
+
+        SPUtil.putString(this,PLAY_FLAG_FILE,PLAY_FLAG_KEY,playFlag);
+
+        SPUtil.putString(this,AUDIO_SOURCE_FILE,AUDIO_SOURCE_KEY,
+                selectedAudioSourceIdx+"");
+        audioFormatSource = getAudioFormatSource(selectedAudioSourceIdx);
+
     }
 
 

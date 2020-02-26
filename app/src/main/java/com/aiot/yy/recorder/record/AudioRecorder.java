@@ -3,8 +3,10 @@ package com.aiot.yy.recorder.record;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Process;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import com.aiot.yy.recorder.util.FileUtil;
@@ -14,7 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class AudioRecorder implements IAudioRecorder{
+public class AudioRecorder implements IAudioRecorder {
 
     //public static final int RECORDER_SAMPLE_RATE = 48000;
     //public static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_OUT_STEREO;
@@ -50,17 +52,19 @@ public class AudioRecorder implements IAudioRecorder{
     private int channelFormatNum;
     private String pcmFileName;
     private String waveFileName;
+    private int audioFormatSource;
 
-    public AudioRecorder(int samplingRate,String fileName,int channelNum){
+    public AudioRecorder(int samplingRate, String fileName, int channelNum,int audioFormatSource) {
         this.samplingRate = samplingRate;
         pcmFileName = FILE_PREFIX + fileName + ".pcm";
         waveFileName = FILE_PREFIX + fileName + ".wav";
         this.channelNum = channelNum;
         this.channelFormatNum = channelNum == 2 ? AudioFormat.CHANNEL_IN_STEREO :
                 AudioFormat.CHANNEL_IN_MONO;
-        Log.d("test","channel:" + channelNum);
+        this.audioFormatSource = audioFormatSource;
+        Log.d("test", "channel:" + channelNum);
         File dir = new File(FILE_PREFIX);
-        if (!dir.exists()){
+        if (!dir.exists()) {
             dir.mkdir();
         }
     }
@@ -89,7 +93,7 @@ public class AudioRecorder implements IAudioRecorder{
     }
 
     private void startRecordThread() throws FileNotFoundException {
-        Log.e(TAG,"record thread run");
+        Log.e(TAG, "record thread run");
         new Thread(new PriorityRunnable(Process.THREAD_PRIORITY_AUDIO) {
 
             private void onExit() {
@@ -103,34 +107,36 @@ public class AudioRecorder implements IAudioRecorder{
             @SuppressWarnings("ResultOfMethodCallIgnored")
             @Override
             public void runImpl() {
-                Log.e(TAG,"into rumImpl");
+                Log.e(TAG, "into rumImpl");
                 int bufferSize = Math.max(BUFFER_BYTES_ELEMENTS * BUFFER_BYTES_PER_ELEMENT,
                         AudioRecord.getMinBufferSize(samplingRate, channelFormatNum, RECORDER_AUDIO_ENCODING));
-                Log.e(TAG,"buffersize:" + bufferSize);
+                Log.e(TAG, "buffersize:" + bufferSize);
                 int size = 1024;
 
 
-                while(size < bufferSize){
+                while (size < bufferSize) {
                     size = size * 2;
                 }
 
-                if (channelFormatNum == AudioFormat.CHANNEL_IN_MONO){
+                if (channelFormatNum == AudioFormat.CHANNEL_IN_MONO) {
                     bufferSize = size;
-                }else {
+                } else {
                     bufferSize = 2 * size;
-                    Log.d("test","stereo buffer");
+                    Log.d("test", "stereo buffer");
                 }
 
-                AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, samplingRate,
+
+                AudioRecord recorder = new AudioRecord(audioFormatSource, samplingRate,
                         channelFormatNum, RECORDER_AUDIO_ENCODING, bufferSize);
 
+
                 boolean flag = recorder == null;
-                Log.e(TAG,"recoder is null:" + flag);
-                if(recorder.getState() == AudioRecord.STATE_UNINITIALIZED){
-                    Log.e(AudioRecorder.class.getSimpleName(),"*******************************Initialize audio recorder error");
+                Log.e(TAG, "recoder is null:" + flag);
+                if (recorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
+                    Log.e(AudioRecorder.class.getSimpleName(), "*******************************Initialize audio recorder error");
                     return;
-                }else{
-                    Log.d(AudioRecorder.class.getSimpleName(),"-------------------------------Initialize AudioRecord ok");
+                } else {
+                    Log.d(AudioRecorder.class.getSimpleName(), "-------------------------------Initialize AudioRecord ok");
                 }
                 try {
                     if (recorderState == RECORDER_STATE_STARTING) {
@@ -145,7 +151,7 @@ public class AudioRecorder implements IAudioRecorder{
 
                         if (bytesRead > 0) {
                             /********************* 回调音频数据 *************************/
-                            Log.d(TAG,"bufferSize:" + recordBuffer.length);
+                            Log.d(TAG, "bufferSize:" + recordBuffer.length);
                             fileOutputStream.write(recordBuffer);
                             //recordingCallback.onDataReady(recordBuffer,bytesRead);
                         } else {
@@ -197,7 +203,7 @@ public class AudioRecorder implements IAudioRecorder{
         //pcm转wav
         File pcm = new File(pcmFileName);
         File wav = new File(waveFileName);
-        FileUtil.pcmToWav(pcm,wav,samplingRate,channelNum);
+        FileUtil.pcmToWav(pcm, wav, samplingRate, channelNum);
         pcm.delete();
     }
 
@@ -210,8 +216,37 @@ public class AudioRecorder implements IAudioRecorder{
         void onDataReady(short[] data, int bytelen);
     }
 
-    public void registerCallback(RecordingCallback callback){
+    public void registerCallback(RecordingCallback callback) {
         this.recordingCallback = callback;
+    }
+
+    public boolean checkAudioSource() {
+        int bufferSize = Math.max(BUFFER_BYTES_ELEMENTS * BUFFER_BYTES_PER_ELEMENT,
+                AudioRecord.getMinBufferSize(samplingRate, channelFormatNum, RECORDER_AUDIO_ENCODING));
+        int size = 1024;
+        while (size < bufferSize) {
+            size = size * 2;
+        }
+
+        if (channelFormatNum == AudioFormat.CHANNEL_IN_MONO) {
+            bufferSize = size;
+        } else {
+            bufferSize = 2 * size;
+        }
+
+        AudioRecord recorder = null;
+        try {
+            recorder = new AudioRecord(audioFormatSource, samplingRate,
+                    channelFormatNum, RECORDER_AUDIO_ENCODING, bufferSize);
+        }catch (Exception e){
+            return false;
+        }
+
+        if (recorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
 }
