@@ -83,7 +83,7 @@ public class AudioPlayer implements IAudioPlayer{
         }
         Log.d("player","===start===");
         new Thread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+            //@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void run() {
                 playAudioData();
