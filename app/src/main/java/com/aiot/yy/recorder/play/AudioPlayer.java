@@ -40,11 +40,17 @@ public class AudioPlayer implements IAudioPlayer{
 
     private void init(){
         bufferSizeInBytes = AudioTrack.getMinBufferSize(fs,channelNum,AUDIO_FORMAT);
+
         //bufferSizeInBytes = bufferSizeInBytes * 2;
         Log.d("player","buffer size:" + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0){
             throw new IllegalStateException("AudioTrack is not available " + bufferSizeInBytes);
         }
+
+        while (bufferSizeInBytes < chirp.length){
+            bufferSizeInBytes *= 2;
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             audioTrack = new AudioTrack.Builder()
                     .setBufferSizeInBytes(bufferSizeInBytes)
@@ -86,15 +92,16 @@ public class AudioPlayer implements IAudioPlayer{
         status = PlayStatus.PLAY_START;
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    //@TargetApi(Build.VERSION_CODES.M)
+    //@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void playAudioData(){
         byte[] bytes = new byte[bufferSizeInBytes];
         int len;
         audioTrack.play();
 
         while (status == PlayStatus.PLAY_START){
-            audioTrack.write(chirp,0,chirp.length,AudioTrack.WRITE_BLOCKING);
+            //audioTrack.write(chirp,0,chirp.length,AudioTrack.WRITE_BLOCKING);
+            audioTrack.write(chirp,0,chirp.length);
         }
     }
 

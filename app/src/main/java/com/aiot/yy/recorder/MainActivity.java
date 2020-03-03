@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final List<String> audioSourceSet = new LinkedList<>(Arrays.asList("MIC","DEFAULT",
             "VOICE_CALL",
             "VOICE_COMMUNICATION","VOICE_DOWNLINK","VOICE_UPLINK",
-            "VOICE_PERFORMANCE","VOICE_RECOGNITION","CAMCORDER",
+            "VOICE_RECOGNITION","CAMCORDER",
             "UNPROCESSED","REMOTE_SUBMIX"));
     private int selectedFsIdx = 0;
     private int selectedChannelIdx = 0;
@@ -103,7 +103,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initData();
 
     }
-
 
 
     private void initView(){
@@ -198,7 +197,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //开始播放
                     //初始化音频处理对象
                     if (switchButton.isChecked()){
-                        audioPlayer = new AudioPlayer(fs,this.T, this.fmin, this.fmax,channels);
+                        try{
+                            audioPlayer = new AudioPlayer(fs,this.T, this.fmin, this.fmax,channels);
+                        }catch (Exception e){
+                            Toast.makeText(MainActivity.this,"当前参数无法播放",Toast.LENGTH_SHORT).show();
+                            return;
+                        }
                         audioPlayer.startPlay();
                     }
                 }else {
@@ -327,22 +331,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             }
             case 6:{
-                ret = MediaRecorder.AudioSource.VOICE_PERFORMANCE;
-                break;
-            }
-            case 7:{
                 ret = MediaRecorder.AudioSource.VOICE_RECOGNITION;
                 break;
             }
-            case 8:{
+            case 7:{
                 ret = MediaRecorder.AudioSource.CAMCORDER;
                 break;
             }
-            case 9:{
+            case 8:{
                 ret = MediaRecorder.AudioSource.UNPROCESSED;
                 break;
             }
-            case 10:{
+            case 9:{
                 ret = MediaRecorder.AudioSource.REMOTE_SUBMIX;
                 break;
             }
