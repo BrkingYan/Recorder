@@ -2,11 +2,16 @@ package com.aiot.yy.recorder.util;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.os.Environment;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 
 public class FileUtil {
     public static void pcmToWav(File pcmFile, File wavFile,int mSampleRate,int channelNum) {
@@ -107,4 +112,26 @@ public class FileUtil {
         header[43] = (byte) ((audioDataLength >> 24) & 0xff);
         fos.write(header);
     }
+
+    private static String error_file =
+            Environment.getExternalStorageDirectory().getAbsolutePath() + "/ChirpRecord/error.txt";
+
+    public static void writeError(String errorStr){
+        Log.d("check","write error");
+        PrintWriter writer = null;
+        File file = new File(error_file);
+        if (file.exists()){
+            file.delete();
+        }
+
+        try {
+            writer = new PrintWriter(error_file);
+            writer.println(errorStr);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }finally {
+            writer.close();
+        }
+    }
+
 }

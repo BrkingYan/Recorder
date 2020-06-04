@@ -112,8 +112,8 @@ public class AudioPlayer implements IAudioPlayer{
         if (status != PlayStatus.PLAY_START){
             throw new IllegalStateException("播放尚未开始");
         }else {
-            audioTrack.stop();
             status = PlayStatus.PLAY_STOP;
+            audioTrack.stop();
             if (audioTrack != null){
                 audioTrack.release();
                 audioTrack = null;

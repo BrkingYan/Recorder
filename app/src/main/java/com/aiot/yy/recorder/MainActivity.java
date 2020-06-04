@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -174,8 +175,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (!fileNameInput.getText().toString().equals("")){
                         fileName = fileNameInput.getText().toString();
                     }
+
                     //开始录音
                     audioRecorder = new AudioRecorder(fs,fileName,channels,audioFormatSource);
+
                     //测试音源
                     if (!audioRecorder.checkAudioSource()){
                         Toast.makeText(MainActivity.this,
@@ -183,6 +186,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 Toast.LENGTH_SHORT).show();
                         return;
                     }
+
+
                     //变换按钮颜色
                     new Handler().postDelayed(new Runnable() {
                         @Override
@@ -339,11 +344,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             }
             case 8:{
-                ret = MediaRecorder.AudioSource.UNPROCESSED;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    ret = MediaRecorder.AudioSource.UNPROCESSED;
+                }
                 break;
             }
             case 9:{
-                ret = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    ret = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+                }
                 break;
             }
         }

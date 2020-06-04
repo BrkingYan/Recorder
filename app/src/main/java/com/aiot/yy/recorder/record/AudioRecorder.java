@@ -163,6 +163,7 @@ public class AudioRecorder implements IAudioRecorder {
                     e.printStackTrace();
                 } finally {
                     recorder.release();
+                    recorder = null;
                 }
                 onExit();
             }
@@ -239,14 +240,20 @@ public class AudioRecorder implements IAudioRecorder {
             recorder = new AudioRecord(audioFormatSource, samplingRate,
                     channelFormatNum, RECORDER_AUDIO_ENCODING, bufferSize);
         }catch (Exception e){
+            Log.e("check","1");
+            Log.e("check",e.toString());
+            FileUtil.writeError(e.toString());
+            recorder.release();
+            recorder = null;
             return false;
         }
-
         if (recorder.getState() == AudioRecord.STATE_UNINITIALIZED) {
+            Log.e("check","2");
             return false;
-        } else {
-            return true;
         }
+        recorder.release();
+        recorder = null;
+        return true;
     }
 
 }

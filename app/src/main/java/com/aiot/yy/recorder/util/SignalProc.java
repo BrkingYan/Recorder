@@ -73,7 +73,6 @@ public class SignalProc {
                 boolean isNeg1 = l == 16;
                 res[2*n+1] = isNeg1 ? (byte) (-(string2Byte(intBinary.substring(1,8))))
                         : string2Byte(intBinary.substring(0,l-8));
-
             }
 
             if (l < 8){
